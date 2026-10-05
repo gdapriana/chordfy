@@ -1,0 +1,110 @@
+// Prisma Schema for Chordfy (Song Chords & Synchronized Lyrics App)
+// Tanpa User, Autentikasi, dan Difficulty + Dengan Tabel Chord Diagram
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Artist {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  bio       String?
+  imageUrl  String?
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  songs Song[]
+
+  @@map("artists")
+}
+
+model Genre {
+  id        String      @id @default(uuid())
+  name      String      @unique
+  slug      String      @unique
+  createdAt DateTime    @default(now())
+  songs     SongGenre[]
+
+  @@map("genres")
+}
+
+model Song {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  artistId    String
+  artist      Artist   @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  bpm         Int?
+  capo        Int      @default(0)
+  originalKey String
+  lyricsLrc   String   @db.Text
+  chordsLrc   String?  @db.Text
+  rawContent  String?  @db.Text
+  youtubeUrl  String?
+  spotifyUrl  String?
+  isPublished Boolean  @default(true)
+  viewsCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  genres    SongGenre[]
+  playlists PlaylistSong[]
+
+  @@index([title])
+  @@index([artistId])
+  @@map("songs")
+}
+
+model SongGenre {
+  songId  String
+  genreId String
+  song    Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([songId, genreId])
+  @@map("song_genres")
+}
+
+model Chord {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  frets     Int[]
+  fingers   Int[]
+  barre     Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("chords")
+}
+
+model Playlist {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  songs PlaylistSong[]
+
+  @@map("playlists")
+}
+
+model PlaylistSong {
+  id         String   @id @default(uuid())
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  songId     String
+  song       Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  order      Int      @default(0)
+  addedAt    DateTime @default(now())
+
+  @@unique([playlistId, songId])
+  @@map("playlist_songs")
+}
